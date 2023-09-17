@@ -8,62 +8,79 @@ Amtrak-specific functions for timetable_kit.
 
 This defines an interface; VIA rail and others need to provide the same interface.
 """
+from __future__ import annotations
 
-# Published agency name
-published_name = "Amtrak"
-published_names_or = "Amtrak"
-published_names_and = "Amtrak"
-# Published agency website, for printing.
-# Does not include the https:// and should be capitalized for print.
-published_website = "Amtrak.com"
+from pathlib import Path
+from typing import Iterable
 
-# CSS class for special modifications to the output.
-# Currently only used to change the header bar color.
-css_class = "amtrak-special-css"
-
-# Platform accessibility
-from .access import (
-    station_has_accessible_platform,
-    station_has_inaccessible_platform,
-)
-
-# Baggage
-from .baggage import station_has_checked_baggage
-
-# For making the key for connecting services (including only those in this timetable)
-# This takes a list of stations as an argument
-from .connecting_services_data import get_all_connecting_services
-
-# Where to find the GTFS
-from .get_gtfs import (
-    gtfs_unzipped_local_path,
-    published_gtfs_url,
-)
-
-# Special routine to patch Amtrak's defective GTFS feed
-from .gtfs_patches import patch_feed
+from timetable_kit.amtrak.access import AmtrakAccessibilityInfo
+from timetable_kit.amtrak.gtfs import AmtrakGTFSHandler
 
 # How to title the routes at the top of the column
-from .route_names import get_route_name
-
-# For colorizing columns
-from .special_data import (
-    is_connecting_service,
-    is_sleeper_train,
-    is_high_speed_train,
-)
-from .special_data import train_has_checked_baggage
+from timetable_kit.amtrak.route_names import get_route_name
+from timetable_kit.amtrak.stations import AmtrakStationInfo
+from timetable_kit.amtrak.vehicles import AmtrakVehicleInfo
 
 # Routine to pretty-print a station name
 # (including subtitles, connecting agency logos, etc.)
-from .station_names import get_station_name_pretty
+from timetable_kit.generic_agency import Agency
+
+module_location = Path(__file__).parent
 
 
-# These are do-nothings for Amtrak, but
-# quite significant for VIA Rail
-def stop_code_to_stop_id(stop_code: str) -> str:
-    return stop_code
+class Amtrak(Agency):
+    name = "Amtrak"
+    input_dir = Path("specs_amtrak")
+    # Published agency website, for printing.
+    # Does not include the https:// and should be capitalized for print.
+    published_website = "Amtrak.com"
+    # Found at transit.land.
+    # Also at The Mobility Database on GitHub.  MobilityData/mobility-database
+    # This is the URL we should download the GTFS from.
+    canonical_gtfs_url = "https://content.amtrak.com/content/gtfs/GTFS.zip"
+
+    # This is the URL we should publish at the bottom of the timetable as the
+    # source for GTFS data.  This should probably be a transit.land or similar
+    # reference, in case the canonical url changes.
+    published_gtfs_url = "https://www.transit.land/feeds/f-9-amtrak~amtrakcalifornia~amtrakcharteredvehicle"
+    # CSS class for special modifications to the output.
+    # Currently only used to change the header bar color.
+    css_class = "amtrak-special-css"
+
+    gtfs_zip_local_path = module_location / "GTFS.zip"
+    gtfs_unzipped_local_path = module_location / "gtfs"
+
+    _vehicle_info_class = AmtrakVehicleInfo
+    _accessibility_info_class = AmtrakAccessibilityInfo
+    _station_info_class = AmtrakStationInfo
+    _gtfs_handler_class = AmtrakGTFSHandler
+
+    @staticmethod
+    def get_all_connecting_services(stations: Iterable[str]) -> list[str]:
+        from timetable_kit.amtrak.connecting_services_data import (
+            get_all_connecting_services,
+        )
+
+        return get_all_connecting_services(stations)
 
 
-def stop_id_to_stop_code(stop_id: str) -> str:
-    return stop_id
+if __name__ == "__main__":
+    from timetable_kit.initialize import initialize_feed
+
+    master_feed = initialize_feed(gtfs=Amtrak.gtfs_zip_local_path)
+    my_agency = Amtrak(master_feed)
+    # print(my_agency.get_stop_name("ALB"))
+    # # This works but is ugly / undesirable
+    # my_agency.get_station_name_pretty = amtrak.get_station_name_pretty
+    # print(my_agency.get_station_name_pretty("ALB"))
+    # print(my_agency.get_station_name_pretty("ALB", doing_multiline_text=True))
+    # print(my_agency.get_station_name_pretty("ALB", doing_html=True))
+    print(my_agency.get_stop_name("ALB"))
+    print(my_agency.station_info.get_station_name_pretty("ALB"))
+    print(
+        my_agency.station_info.get_station_name_pretty("ALB", doing_multiline_text=True)
+    )
+    print(my_agency.station_info.get_station_name_pretty("ALB", doing_html=True))
+
+    b = my_agency.station_info.station_has_checked_baggage("NYP")
+    print(b)

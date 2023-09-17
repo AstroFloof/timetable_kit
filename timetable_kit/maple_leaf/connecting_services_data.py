@@ -8,52 +8,50 @@ This module is a database of which stations connect to which other transit servi
 
 Sadly, it must be maintained by hand.
 """
+from typing import Iterable
 
 # key: station code
-# value: list of services (strings matching the definitions in timetable_kit/connecting_services/*.py
+# value: set of services (strings matching the definitions in timetable_kit/connecting_services/*.py
 # Order matters: it's the order the logos will be printed in
 # Maple Leaf is the only timetable where we include both VIA and Amtrak connections
 # New York State Fair (NYF) shows up occasionally, but leave this out
 connecting_services_dict = {
-    "NYP": ["amtrak", "njt", "nyc_subway", "lirr"],
-    "YNY": ["amtrak"],
-    "CRT": ["amtrak", "metro_north"],
-    "POU": ["amtrak", "metro_north"],
-    "RHI": ["amtrak"],
-    "HUD": ["amtrak"],
-    "ALB": ["amtrak"],
-    "SDY": ["amtrak"],
-    "AMS": ["amtrak"],
-    "UCA": ["amtrak", "adirondack"],
-    "ROM": ["amtrak"],
-    "SYR": ["amtrak"],
-    "ROC": ["amtrak"],
-    "BUF": ["amtrak"],
-    "BFX": ["amtrak", "nfta_metro"],
-    "NFL": ["amtrak"],
-    "CBN": [],  # Canadian Border
+    "NYP": {"amtrak", "njt", "nyc_subway", "lirr"},
+    "YNY": {"amtrak"},
+    "CRT": {"amtrak", "metro_north"},
+    "POU": {"amtrak", "metro_north"},
+    "RHI": {"amtrak"},
+    "HUD": {"amtrak"},
+    "ALB": {"amtrak"},
+    "SDY": {"amtrak"},
+    "AMS": {"amtrak"},
+    "UCA": {"amtrak", "adirondack"},
+    "ROM": {"amtrak"},
+    "SYR": {"amtrak"},
+    "ROC": {"amtrak"},
+    "BUF": {"amtrak"},
+    "BFX": {"amtrak", "nfta_metro"},
+    "NFL": {"amtrak"},
+    "CBN": set(),  # Canadian Border
     # Maple Leaf in Canada
-    "NFS": ["via_rail", "go_transit"],
-    "SCA": ["via_rail", "go_transit"],
-    "GMS": ["via_rail"],
-    "AST": ["via_rail", "go_transit"],
-    "OKL": ["via_rail", "go_transit"],
-    "TWO": ["via_rail", "go_transit", "union_pearson_express", "ttc"],
+    "NFS": {"via_rail", "go_transit"},
+    "SCA": {"via_rail", "go_transit"},
+    "GMS": {"via_rail"},
+    "AST": {"via_rail", "go_transit"},
+    "OKL": {"via_rail", "go_transit"},
+    "TWO": {"via_rail", "go_transit", "union_pearson_express", "ttc"},
 }
 
 
-def get_all_connecting_services(station_list: list[str]) -> list:
+def get_all_connecting_services(station_list: Iterable[str]) -> list:
     """
     Given a list of station codes, return a list of services which connect
     (with no duplicates)
     """
-    all_services = []
+    all_services = set()
     for station in station_list:
-        new_services = connecting_services_dict.get(station, [])
-        for service in new_services:
-            if service not in all_services:
-                all_services.append(service)
-    return all_services
+        all_services |= connecting_services_dict.get(station, set())
+    return list(all_services)
 
 
 if __name__ == "__main__":

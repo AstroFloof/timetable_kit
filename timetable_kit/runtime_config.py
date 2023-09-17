@@ -7,73 +7,45 @@ timetable.py.  This data needs to be shared by multiple modules, so it needs to 
 
 This data includes the critical choice of which agency's subpackage to use.
 """
-
-from timetable_kit.debug import debug_print
-
-# For sys.exit
-import sys
+from typing import Type
 
 # The agencies we might need to import
-import timetable_kit.amtrak
-import timetable_kit.via
-import timetable_kit.hartford_line
-import timetable_kit.maple_leaf
-
-# These will get set elsewhere, later, by initialization code.
-agency_name = None
-agency_package = None
-agency_input_dir = None
+from timetable_kit.debug import debug_print
+from timetable_kit.generic_agency import Agency
 
 # These are the choices which can be set at the command line.
 agency_choices = ["generic", "amtrak", "via", "hartford", "maple_leaf"]
 
 
-def set_agency(agency: str):
+def get_agency_class(agency_name: str) -> Type[Agency]:
     """
     Set the agency subpackage to use to get agency-specific data (e.g. generic, amtrak, via).
 
     Called by initialization code
     """
 
-    global agency_name
-    global agency_package
-    global agency_input_dir
-
-    match agency:
+    match agency_name:
         case "generic":
-            print("Unimplemented")
-            sys.exit(1)
+            raise NotImplementedError("There is no generic agency, what did you do?")
         case "amtrak":
             debug_print(1, "Using Amtrak data")
-            agency_name = "Amtrak"
-            agency_package = timetable_kit.amtrak
-            agency_input_dir = "specs_amtrak"
+            from timetable_kit.amtrak import Amtrak
+
+            return Amtrak
         case "hartford":
             debug_print(1, "Using Hartford Line data with Amtrak data")
-            agency_name = "Hartford Line"
-            agency_package = timetable_kit.hartford_line
-            agency_input_dir = "specs_hartford"
+            from timetable_kit.hartford_line import HartfordLine
+
+            return HartfordLine
         case "via":
             debug_print(1, "Using VIA Rail data")
-            agency_name = "VIA Rail"
-            agency_package = timetable_kit.via
-            agency_input_dir = "specs_via"
+            from timetable_kit.via import VIARail
+
+            return VIARail
         case "maple_leaf":
             debug_print(1, "Using Amtrak and VIA Rail data for Maple Leaf")
-            agency_name = "Maple Leaf"
-            agency_package = timetable_kit.maple_leaf
-            agency_input_dir = "specs_maple_leaf"
+            from timetable_kit.maple_leaf import MapleLeaf
+
+            return MapleLeaf
         case _:
-            print("Invalid agency subpackage choice")
-            sys.exit(1)
-
-
-def agency():
-    """
-    Get the agency subpackage to use to get agency-specific data (e.g. generic, amtrak, via).
-    """
-    global agency_name
-    global agency_package
-
-    debug_print(3, "Retrieving agency_package", agency_package)
-    return agency_package
+            raise ImportError("Invalid agency subpackage choice")

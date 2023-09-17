@@ -8,78 +8,76 @@ This module is a database of which VIA stations connect to which other transit s
 
 Sadly, it must be maintained by hand.
 """
+from typing import Iterable
 
 # key: VIA rail station code (not stop id)
-# value: list of services (strings matching the definitions in timetable_kit/connecting_services/*.py
+# value: set of services (strings matching the definitions in timetable_kit/connecting_services/*.py
 # Order matters within a single station: it's the order the logos will be printed in
 connecting_services_dict = {
     # Maple Leaf stations in NY
-    "NEWY": ["amtrak", "njt", "nyc_subway", "lirr"],
-    "YONK": ["amtrak", "metro_north"],
-    "CROT": ["amtrak", "metro_north"],
-    "POUG": ["amtrak", "metro_north"],
-    "HUDS": ["amtrak"],
-    "RHIN": ["amtrak"],
-    "ALBY": ["amtrak"],
-    "SCHE": ["amtrak"],
-    "AMST": ["amtrak"],
-    "ROME": ["amtrak"],
-    "UTIC": ["amtrak", "adirondack"],
-    "SYRA": ["amtrak"],
-    "ROCH": ["amtrak"],
-    "BUFF": ["amtrak"],
-    "BUFX": ["amtrak", "nfta_metro"],
-    "NFNY": ["amtrak"],
+    "NEWY": {"amtrak", "njt", "nyc_subway", "lirr"},
+    "YONK": {"amtrak", "metro_north"},
+    "CROT": {"amtrak", "metro_north"},
+    "POUG": {"amtrak", "metro_north"},
+    "HUDS": {"amtrak"},
+    "RHIN": {"amtrak"},
+    "ALBY": {"amtrak"},
+    "SCHE": {"amtrak"},
+    "AMST": {"amtrak"},
+    "ROME": {"amtrak"},
+    "UTIC": {"amtrak", "adirondack"},
+    "SYRA": {"amtrak"},
+    "ROCH": {"amtrak"},
+    "BUFF": {"amtrak"},
+    "BUFX": {"amtrak", "nfta_metro"},
+    "NFNY": {"amtrak"},
     # Maple Leaf in Canada
-    "NIAG": ["go_transit"],
-    "SCAT": ["go_transit"],
-    "GRIM": [],  # No GO at Grimsby
-    "ALDR": ["go_transit"],
-    "OAKV": ["go_transit"],
+    "NIAG": {"go_transit"},
+    "SCAT": {"go_transit"},
+    "GRIM": set(),  # No GO at Grimsby
+    "ALDR": {"go_transit"},
+    "OAKV": {"go_transit"},
     # Southwest Ontario, Kitchener Line
-    "KITC": ["go_transit"],
-    "GUEL": ["go_transit"],
-    "GEOR": ["go_transit"],
-    "BRMP": ["go_transit"],
-    "MALT": ["go_transit"],
+    "KITC": {"go_transit"},
+    "GUEL": {"go_transit"},
+    "GEOR": {"go_transit"},
+    "BRMP": {"go_transit"},
+    "MALT": {"go_transit"},
     # Toronto!
-    "TRTO": ["amtrak", "go_transit", "union_pearson_express", "ttc"],
+    "TRTO": {"amtrak", "go_transit", "union_pearson_express", "ttc"},
     # East from Toronto on the Lakeshore East corridor
-    "GUIL": ["go_transit"],
-    "OSHA": ["go_transit"],
+    "GUIL": {"go_transit"},
+    "OSHA": {"go_transit"},
     # Ottawa!
-    "OTTW": ["o_train"],
+    "OTTW": {"o_train"},
     # Montreal !
     # "Amtrak" here is the Adirondack, currently suspended
-    "MTRL": ["amtrak", "exo", "montreal_metro"],
+    "MTRL": {"amtrak", "exo", "montreal_metro"},
     # on the way to Hervey/Senneterre/Jonquiere
-    "SAUV": ["exo", "montreal_metro"],
-    "ANJO": ["exo"],
+    "SAUV": {"exo", "montreal_metro"},
+    "ANJO": {"exo"},
     # on the way to Quebec City and Halifax
-    "SLAM": ["exo"],
+    "SLAM": {"exo"},
     # on the way to Ottawa and points west
     # Note that Dorval also needs the montreal_airport_shuttle notation
-    "DORV": ["exo"],
+    "DORV": {"exo"},
     # The Pas
-    "TPAS": ["keewatin_railway"],
+    "TPAS": {"keewatin_railway"},
     # Vancouver, BC
     # "Amtrak" here is the Cascades
-    "VCVR": ["amtrak", "skytrain"],
+    "VCVR": {"amtrak", "skytrain"},
 }
 
 
-def get_all_connecting_services(station_list: list[str]) -> list:
+def get_all_connecting_services(station_list: Iterable[str]) -> list:
     """
     Given a list of station codes, return a list of services which connect
     (with no duplicates)
     """
-    all_services = []
+    all_services = set()
     for station in station_list:
-        new_services = connecting_services_dict.get(station, [])
-        for service in new_services:
-            if service not in all_services:
-                all_services.append(service)
-    return all_services
+        all_services |= connecting_services_dict.get(station, set())
+    return list(all_services)
 
 
 if __name__ == "__main__":

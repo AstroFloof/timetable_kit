@@ -10,11 +10,10 @@ import argparse
 import os  # For os.getenv
 import sys  # For sys.exit
 
-from timetable_kit import runtime_config  # for the agency()
 from timetable_kit.debug import debug_print, set_debug_level
 from timetable_kit.initialize import filter_feed_for_utilities
 from timetable_kit.initialize import initialize_feed
-from timetable_kit.runtime_config import agency  # for the agency()
+from timetable_kit.runtime_config import get_agency_class
 
 # Common arguments for the command line
 from timetable_kit.timetable_argparse import (
@@ -82,19 +81,20 @@ if __name__ == "__main__":
 
     # Eventually this will be set from the command line -- FIXME
     debug_print(2, "Agency found:", args.agency)
-    runtime_config.set_agency(args.agency)
+    agency_class = get_agency_class(args.agency)
 
     if args.gtfs_filename:
         gtfs_filename = args.gtfs_filename
     else:
         # Default to agency
-        gtfs_filename = agency().gtfs_unzipped_local_path
+        gtfs_filename = agency_class.gtfs_unzipped_local_path
 
     master_feed = initialize_feed(gtfs=gtfs_filename)
 
     today_feed = filter_feed_for_utilities(
         master_feed, reference_date=args.reference_date, day_of_week=args.day
     )
+    my_agency = agency_class(today_feed)
 
     optional_tsn = args.trip_short_name
     positional_tsn = args.trip

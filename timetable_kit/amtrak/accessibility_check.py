@@ -23,8 +23,6 @@ from timetable_kit.amtrak.json_stations import (
     load_station_details,
 )
 
-# To filter out that which is not a train station
-from timetable_kit.amtrak.station_type import is_train_station
 
 # FIXME: this should be relative to something.
 base_dir = Path(__file__).parent
@@ -71,7 +69,6 @@ def make_station_stats():
 
     for code in cleaned_station_list:
         print("Analyzing " + code)
-        station_details_json = None
         station_details_json = load_station_details(code)
 
         # The details aren't in a form where pd.io.json.read_json likes it

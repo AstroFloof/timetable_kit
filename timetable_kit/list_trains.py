@@ -19,12 +19,11 @@ Optionally filter by day of week.
 import argparse
 import sys  # for exit
 
-from timetable_kit import runtime_config  # for the agency()
 from timetable_kit.debug import debug_print, set_debug_level
 from timetable_kit.feed_enhanced import FeedEnhanced
 from timetable_kit.initialize import filter_feed_for_utilities
 from timetable_kit.initialize import initialize_feed
-from timetable_kit.runtime_config import agency  # for the agency()
+from timetable_kit.runtime_config import get_agency_class
 
 # Common arguments for the command line
 from timetable_kit.timetable_argparse import (
@@ -158,19 +157,19 @@ def report_dupes(tsn_list: list[str]):
 def make_argparser():
     parser = argparse.ArgumentParser(
         description="""
-                    With ONE argument, produce list of trains/buses (trip_short_name) which stop at that stop.
-                    Useful for finding all the connecting buses at FLG.
+        With ONE argument, produce list of trains/buses (trip_short_name) which stop at that stop.
+        Useful for finding all the connecting buses at FLG.
 
-                    With TWO arguments, produce list of trains/buses (trip_short_name) which stop at the first stop, and later at the last stop.
-                    Useful for making sure you found all the trains from NYP to PHL.
+        With TWO arguments, produce list of trains/buses (trip_short_name) which stop at the first stop, and later at the last stop.
+        Useful for making sure you found all the trains from NYP to PHL.
 
-                    FOUR or a larger even number of arguments will be treated as a list of pairs,
-                    so BOS NYP NYP PHL will get the trains from BOS to NYP and the trains from NYP to PHL.
+        FOUR or a larger even number of arguments will be treated as a list of pairs,
+        so BOS NYP NYP PHL will get the trains from BOS to NYP and the trains from NYP to PHL.
 
-                    In either case, results are sorted by departure time at the first stop.
+        In either case, results are sorted by departure time at the first stop.
 
-                    The output should always be reviewed manually before generating tt-spec, especially for days-of-week issues.
-                    """,
+        The output should always be reviewed manually before generating tt-spec, especially for days-of-week issues.
+        """,
     )
     add_agency_argument(parser)
     add_gtfs_argument(parser)
@@ -212,13 +211,13 @@ if __name__ == "__main__":
 
     # Eventually this will be set from the command line -- FIXME
     debug_print(2, "Agency found:", args.agency)
-    runtime_config.set_agency(args.agency)
+    agency_class = get_agency_class(args.agency)
 
     if args.gtfs_filename:
         gtfs_filename = args.gtfs_filename
     else:
         # Default to agency
-        gtfs_filename = agency().gtfs_unzipped_local_path
+        gtfs_filename = agency_class.gtfs_unzipped_local_path
 
     stops = args.stops
     sync_stop = args.sync_stop
@@ -228,6 +227,8 @@ if __name__ == "__main__":
     today_feed = filter_feed_for_utilities(
         master_feed, reference_date=args.reference_date, day_of_week=args.day
     )
+
+    my_agency = agency_class(today_feed)
 
     # Make the two interconverting dicts -- we only need one
     trip_id_to_tsn = make_trip_id_to_tsn_dict(today_feed)
@@ -241,7 +242,7 @@ if __name__ == "__main__":
         stop = stops[0]
         print("Finding trips which stop at", stop)
         # Have to convert from stop_code to stop_id for VIA (no-op for Amtrak)
-        stop_id = agency().stop_code_to_stop_id(stop)
+        stop_id = my_agency.station_info.stop_code_to_stop_id(stop)
         trip_ids = get_trips_at(stop_id, feed=today_feed)
         tsns = [trip_id_to_tsn[trip_id] for trip_id in trip_ids]
     elif len(stops) % 2 != 0:
@@ -257,8 +258,8 @@ if __name__ == "__main__":
         for stop_one, stop_two in pairs:
             print("Finding trips from", stop_one, "to", stop_two)
             # Have to convert from stop_code to stop_id for VIA (no-op for Amtrak)
-            stop_one_id = agency().stop_code_to_stop_id(stop_one)
-            stop_two_id = agency().stop_code_to_stop_id(stop_two)
+            stop_one_id = my_agency.station_info.stop_code_to_stop_id(stop_one)
+            stop_two_id = my_agency.station_info.stop_code_to_stop_id(stop_two)
             this_pair_trip_ids = get_trips_between(
                 stop_one_id, stop_two_id, feed=today_feed
             )
@@ -277,7 +278,7 @@ if __name__ == "__main__":
         # Remove duplicates.  (FIXME: do in non-sorting case too?)
         trip_ids = list(set(trip_ids))
         # Sort.
-        sync_stop_id = agency().stop_code_to_stop_id(sync_stop)
+        sync_stop_id = my_agency.station_info.stop_code_to_stop_id(sync_stop)
         sorted_trip_ids = sort_by_time_at_stop(trip_ids, sync_stop_id, feed=today_feed)
     else:
         sorted_trip_ids = trip_ids

@@ -68,6 +68,9 @@ def get_route_name(today_feed, route_id):
         case name if name in corridor_service_route_names:
             # The route names for the Corridor are problematic.
             # Trains are listed as "Quebec Fallowfield" which simply aren't.
+            # This is due to a brief time when some trains would start or stop at
+            # minor stations past the major station in large cities
+            # This no longer occurs but the names remain.
             route_name = "Corridor"
 
     return route_name

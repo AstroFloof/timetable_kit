@@ -6,29 +6,20 @@
 Routines for creating a Maple Leaf GTFS from Amtrak's GTFS and VIA's GTFS.
 """
 
-import sys  # for sys.exit
-
 from pathlib import Path
 from zipfile import ZipFile
 
-import pandas as pd
 import gtfs_kit
 
-# Mine
-from timetable_kit import amtrak
-from timetable_kit import via
-from timetable_kit.merge_gtfs import merge_feed
-
-from timetable_kit.maple_leaf.station_data import (
-    amtrak_code_to_via_code,
+from timetable_kit.amtrak import Amtrak
+from timetable_kit.maple_leaf import MapleLeaf
+from timetable_kit.maple_leaf.station_code_translations import (
     via_code_to_amtrak_code,
 )
+from timetable_kit.merge_gtfs import merge_feed
 
-module_location = Path(__file__).parent
-
-# This is where the Maple Leaf specific GTFS should go.
-gtfs_zip_local_path = module_location / "gtfs.zip"
-gtfs_unzipped_local_path = module_location / "gtfs"
+# Mine
+from timetable_kit.via import VIARail
 
 
 def filter_feed_by_route_names(feed, route_names: list[str]):
@@ -141,14 +132,14 @@ def run():
     Assumes that Amtrak and VIA data have already been downloaded by amtrak/get_gtfs.py and via/get_gtfs.py.
     """
     print("Loading Amtrak GTFS")
-    amtrak_feed_path = Path(amtrak.gtfs_unzipped_local_path)
+    amtrak_feed_path = Path(Amtrak.gtfs_unzipped_local_path)
     amtrak_feed = gtfs_kit.read_feed(amtrak_feed_path, dist_units="mi")
 
     print("Filtering Amtrak feed")
     amtrak_ml_feed = filter_feed_by_route_names(amtrak_feed, ["Maple Leaf"])
 
     print("Loading VIA GTFS")
-    via_feed_path = Path(via.gtfs_unzipped_local_path)
+    via_feed_path = Path(VIARail.gtfs_unzipped_local_path)
     via_feed = gtfs_kit.read_feed(via_feed_path, dist_units="mi")
 
     print("Filtering VIA feed")
@@ -176,16 +167,16 @@ def run():
     # Writing it out unzipped is just as slow.
     # I didn't want to learn how to zip it.
     print("Writing zipped feed")
-    merged_feed.write(Path(gtfs_zip_local_path))
-    print("Merged feed for Maple Leaf at", gtfs_zip_local_path)
+    merged_feed.write(Path(MapleLeaf.gtfs_zip_local_path))
+    print("Merged feed for Maple Leaf at", MapleLeaf.gtfs_zip_local_path)
 
     # Leave it open for inspection and use by main timetable program
     print("Unzipping feed")
-    with ZipFile(gtfs_zip_local_path, "r") as my_zip:
-        if not gtfs_unzipped_local_path.exists():
-            gtfs_unzipped_local_path.mkdir(parents=True)
-        my_zip.extractall(path=gtfs_unzipped_local_path)
-        print("Extracted to " + str(gtfs_unzipped_local_path))
+    with ZipFile(MapleLeaf.gtfs_zip_local_path) as my_zip:
+        if not MapleLeaf.gtfs_unzipped_local_path.exists():
+            MapleLeaf.gtfs_unzipped_local_path.mkdir(parents=True)
+        my_zip.extractall(path=MapleLeaf.gtfs_unzipped_local_path)
+        print("Extracted to " + str(MapleLeaf.gtfs_unzipped_local_path))
 
 
 if __name__ == "__main__":

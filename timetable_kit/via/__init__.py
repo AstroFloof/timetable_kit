@@ -8,63 +8,62 @@ VIA-specific functions for timetable_kit.
 
 This defines an interface; Amtrak and others need to provide the same interface.
 """
+from pathlib import Path
+from typing import Iterable
 
-# Published agency name
-published_name = "VIA Rail"
-published_names_or = "VIA Rail"
-published_names_and = "VIA Rail"
-# Published agency website, for printing.
-# Does not include the https:// and should be capitalized for print.
-published_website = "ViaRail.ca"
+from timetable_kit.generic_agency import Agency
+from timetable_kit.via.access import VIARailAccessibilityInfo
 
-# CSS class for special modifications to the output.
-# Currently only used to change the header bar color.
-css_class = "via-special-css"
-
-# Where to find the GTFS
-from .get_gtfs import (
-    gtfs_unzipped_local_path,
-    published_gtfs_url,
-)
-
-# These are do-nothings for Amtrak, but
-# quite significant for VIA Rail
-from .station_names import (
-    stop_code_to_stop_id,
-    stop_id_to_stop_code,
-)
+# Patch errors in the feed
+from timetable_kit.via.gtfs import VIARailGTFSHandler
 
 # How to title the routes at the top of the column
-from .route_names import get_route_name
+from timetable_kit.via.route_names import get_route_name
+
+# For colorizing columns
+from timetable_kit.via.vehicle_info import VIARailVehicleInfo
 
 # Routine to pretty-print a station name
 # (including subtitles, connecting agency logos, etc.)
-from .station_names import get_station_name_pretty
+from timetable_kit.via.station_info import VIARailStationInfo
 
-# Baggage
-from .special_data import station_has_checked_baggage
-from .special_data import train_has_checked_baggage
-
-# Platform accessibility
-# This is in station_names for convenience
-# Refactor later FIXME
-from .station_names import (
-    station_has_accessible_platform,
-    station_has_inaccessible_platform,
-)
+module_location = Path(__file__).parent
 
 
-# Patch errors in the feed
-from .gtfs_patches import patch_feed
+class VIARail(Agency):
+    # Published agency name
+    name = "VIA Rail"
+    input_dir = Path("specs_via")
 
+    # Published agency website, for printing.
+    # Does not include the https:// and should be capitalized for print.
+    published_website = "ViaRail.ca"
 
-# For colorizing columns
-from .special_data import (
-    is_connecting_service,
-    is_sleeper_train,
-    is_high_speed_train,
-)
+    # CSS class for special modifications to the output.
+    # Currently only used to change the header bar color. TODO do the stuff :)
+    css_class = "via-special-css"
+    _station_info_class = VIARailStationInfo
+    _accessibility_info_class = VIARailAccessibilityInfo
+    _vehicle_info_class = VIARailVehicleInfo
+    _gtfs_handler_class = VIARailGTFSHandler
 
-# For making the key for connecting services (including only those in this timetable)
-# This takes a list of stations as an argument
-from .connecting_services_data import get_all_connecting_services
+    # Where we should download the GTFS from.
+    # Found at www.viarail.ca/en/developer-resources
+    #
+    canonical_gtfs_url = "https://www.viarail.ca/sites/all/files/gtfs/viarail.zip"
+
+    # This is the URL we should publish at the bottom of the timetable as the
+    # source for GTFS data.  This should probably be a transit.land or similar
+    # reference, in case the canonical url changes.
+    published_gtfs_url = "https://www.transit.land/feeds/f-f-viarail~traindecharlevoix"
+
+    gtfs_zip_local_path = module_location / "GTFS.zip"
+    gtfs_unzipped_local_path = module_location / "gtfs"
+
+    @staticmethod
+    def get_all_connecting_services(stations: Iterable[str]) -> list[str]:
+        from timetable_kit.via.connecting_services_data import (
+            get_all_connecting_services,
+        )
+
+        return get_all_connecting_services(stations)

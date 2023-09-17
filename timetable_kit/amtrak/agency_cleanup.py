@@ -11,7 +11,7 @@ They are retained merely as reference code for how to do this, should it be nece
 
 The code is dead.  They are not called.
 """
-
+raise PendingDeprecationWarning("Code unused (see docstring).")
 import pandas as pd
 
 # This one is mine
@@ -20,7 +20,7 @@ from timetable_kit import gtfs_type_cleanup  # import the module name
 
 def indexed_agency(agency):
     """
-    Take type-correted agency DataFrame.  Set agency ID (which must be an integer) as index.
+    Take type-corrected agency DataFrame.  Set agency ID (which must be an integer) as index.
     Sort by it.  Cannot be repeated.
     """
     # Not as helpful as we first supposed.

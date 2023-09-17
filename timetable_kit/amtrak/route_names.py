@@ -8,9 +8,10 @@ get_route_name()
 """
 
 from timetable_kit.errors import GTFSError
+from timetable_kit.feed_enhanced import FeedEnhanced
 
 
-def get_route_name(today_feed, route_id):
+def get_route_name(today_feed: FeedEnhanced, route_id):
     """
     Given today_feed and a route_id, produce a suitable name for a column subheading.
 

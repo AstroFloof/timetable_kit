@@ -15,18 +15,9 @@ This uses Jinja2, via the load_resources module.
 
 # Other people's packages
 import datetime  # for getting today's date for credit on the timetable
-import pandas as pd
 from pandas.io.formats.style import Styler
 
 # My packages
-# This is tricky.
-# We need runtime data such as the subpackage for the agency (amtrak, via, etc.)
-import timetable_kit.runtime_config
-
-# And we need a shorthand way to refer to it
-from timetable_kit.runtime_config import agency as agency
-
-# If we don't use the "as", calls to agency() will "None" out
 
 from timetable_kit import icons
 from timetable_kit import text_presentation
@@ -34,6 +25,7 @@ from timetable_kit import connecting_services
 
 from timetable_kit.errors import InputError
 from timetable_kit.debug import debug_print
+from timetable_kit.generic_agency import Agency, AgencyVehicleInfo
 from timetable_kit.tsn import train_spec_to_tsn
 
 # These are for finish_html_timetable
@@ -44,7 +36,10 @@ from timetable_kit.load_resources import (
 
 
 def get_time_column_stylings(
-    train_spec, route_from_train_spec, output_type="attributes"
+    vehicle_info: AgencyVehicleInfo,
+    train_spec,
+    route_from_train_spec,
+    output_type="attributes",
 ):
     """
     Return a set of CSS attributes or classes to style the header of this column, based on the trains_spec.
@@ -63,11 +58,6 @@ def get_time_column_stylings(
     if output_type not in ["class", "attributes"]:
         raise InputError("expected class or attributes")
 
-    if agency() is None:
-        raise RuntimeError(
-            "Internal error, agency not set before calling get_time_column_stylings"
-        )
-
     # Note that Amtrak GTFS data only has route_types:
     # 2 (is a train)
     # 3 (is a bus)
@@ -79,14 +69,14 @@ def get_time_column_stylings(
         # it's a bus!
         color_css = "background-color: honeydew;"
         color_css_class = "color-bus"
-    elif agency().is_connecting_service(tsn):
+    elif vehicle_info.is_connecting_service(tsn):
         # it's not a bus, it's a connecting train!
         color_css = "background-color: blanchedalmond;"
         color_css_class = "color-connecting-train"
-    elif agency().is_sleeper_train(tsn):
+    elif vehicle_info.is_sleeper_train(tsn):
         color_css = "background-color: lavender;"
         color_css_class = "color-sleeper"
-    elif agency().is_high_speed_train(tsn):
+    elif vehicle_info.is_high_speed_train(tsn):
         color_css = "background-color: aliceblue;"
         color_css_class = "color-high-speed-train"
     else:
@@ -171,6 +161,7 @@ def make_header_styling_css(header_styling_list) -> str:
 
 
 def finish_html_timetable(
+    agency: Agency,
     styled_timetable_html,
     header_styling_list,
     *,
@@ -242,7 +233,7 @@ def finish_html_timetable(
 
     # Key for connecting services:
     # First use the station codes list to get a list of all *relevant* services
-    services_list = agency().get_all_connecting_services(station_codes_list)
+    services_list = agency.get_all_connecting_services(station_codes_list)
     # Then feed that through to get the full key html:
     connecting_services_keys_html = connecting_services.get_keys_html(
         services_list=services_list, one_line=connecting_services_one_line
@@ -280,12 +271,12 @@ def finish_html_timetable(
         "end_date": end_date_str,
         "author": author,
         "connecting_services_keys_html": connecting_services_keys_html,
-        "gtfs_url": agency().published_gtfs_url,  # e.g. URL to Amtrak GTFS
-        "agency_name": agency().published_name,  # e.g. "Amtrak"
-        "agency_names_or": agency().published_names_or,  # e.g. "Amtrak" -- "Amtrak or VIA Rail" for Maple Leaf
-        "agency_names_and": agency().published_names_and,  # e.g. "Amtrak" -- "Amtrak and VIA Rail" for Maple Leaf
-        "agency_website": agency().published_website,  # e.g. "Amtrak.com" -- with capitalization, no https://
-        "agency_css_class": agency().css_class,  # e.g. amtrak-special-css -- currently just changes header color
+        "gtfs_url": agency.published_gtfs_url,  # e.g. URL to Amtrak GTFS
+        "agency_name": agency.published_name,  # e.g. "Amtrak"
+        "agency_names_or": agency.published_names_or,  # e.g. "Amtrak" -- "Amtrak or VIA Rail" for Maple Leaf
+        "agency_names_and": agency.published_names_and,  # e.g. "Amtrak" -- "Amtrak and VIA Rail" for Maple Leaf
+        "agency_website": agency.published_website,  # e.g. "Amtrak.com" -- with capitalization, no https://
+        "agency_css_class": agency.css_class,  # e.g. amtrak-special-css -- currently just changes header color
     }
 
     # Allows direct icon references in Jinja2

@@ -14,14 +14,14 @@ the week.  So we may need to map for days of the week as well.
 
 Also contains other routines which look up trips by tsn.
 """
-from timetable_kit.errors import NoTripError
 from timetable_kit.debug import debug_print
-from timetable_kit.runtime_config import agency
-
-# import gtfs_kit
-
+from timetable_kit.errors import NoTripError
 # List of days which are GTFS column headers
 from timetable_kit.feed_enhanced import GTFS_DAYS, FeedEnhanced
+from timetable_kit.generic_agency import Agency
+
+
+# import gtfs_kit
 
 
 def train_spec_to_tsn(train_spec: str) -> str:
@@ -194,7 +194,7 @@ def trip_from_tsn(today_feed: FeedEnhanced, trip_short_name):
     return this_trip_today
 
 
-def stations_list_from_tsn(today_feed: FeedEnhanced, trip_short_name):
+def stations_list_from_tsn(agency: Agency, trip_short_name):
     """
     Given a single train number (trip_short_name), and a feed containing only one day, produces a dataframe with a stations list -- IN THE RIGHT ORDER.
 
@@ -205,13 +205,13 @@ def stations_list_from_tsn(today_feed: FeedEnhanced, trip_short_name):
     (probably because the feed has multiple dates in it)
     """
 
-    trip_id = trip_from_tsn(today_feed, trip_short_name).trip_id
+    trip_id = trip_from_tsn(agency.feed, trip_short_name).trip_id
 
-    sorted_stop_times = today_feed.get_single_trip_stop_times(trip_id)  # Sorted.
+    sorted_stop_times = agency.feed.get_single_trip_stop_times(trip_id)  # Sorted.
     # For VIA rail, the stop_id is not the same as the stop_code.
     # Add the stop_code.  (For Amtrak, this is a no-op)
     sorted_stop_times["stop_code"] = sorted_stop_times["stop_id"].apply(
-        agency().stop_id_to_stop_code
+        agency.station_info.stop_id_to_stop_code
     )
 
     debug_print(3, sorted_stop_times)
